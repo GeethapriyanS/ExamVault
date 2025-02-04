@@ -99,7 +99,6 @@ body{
 .buttons_login_signup{
     width: 30%;
     height:7%;
-    background-color: aqua;
     position: absolute;
     left: 50%;
     display: flex;
@@ -202,3 +201,62 @@ input[type="checkbox"] {
     top: 85%;
     left: 80%;
 }
+.signup_form{
+    width: 65%;
+    height: 70%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.signup_form h1{
+    height: 10%;
+    width: 100%;
+}
+.user_signup_input{
+    width: 100%;
+    height: 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.user_signup_input label{
+    width: 90%;
+    height: 30%;
+    text-align: start;
+    font-size: 1.2rem;
+}
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+.check_password_signup{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    width: 90%;
+    height: 10%;
+}
+.signup_form button{
+    width: 80%;
+    height: 12%;
+    font-size: 1.5rem;
+    background:linear-gradient(#52057B,#BC6FF1);
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    border: none;
+    color: white;
+    border-radius: 5px;
+}
+.inputs_signup{
+    width: 88%;
+    height: 40%;
+    font-size: 1rem;
+}
+#login_switch, #signup_switch {
+    transition: background-color 0.5s ease, color 0.5s ease; /* Smooth transition */
+  }
+  
