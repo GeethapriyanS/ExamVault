@@ -1,11 +1,15 @@
 import './App.css'
-import Login from './Temp/Boopathi/Login';
+import Login from './components/Login';
+import {BrowserRouter,Routes,Route} from "react-router-dom";
 
 function App() {
   return(
     <>
-    <Login />
-
+    <BrowserRouter>
+    <Routes>
+      <Route path='/login' element={<Login />}></Route>
+    </Routes>
+    </BrowserRouter>
     </>
   );
 }
