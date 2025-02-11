@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Document, Page } from "react-pdf";
+import pdf from "./1.pdf";
 
-function PdfComp({ pdfFile }) {
-  const [numPages, setNumPages] = useState(null);
+function PdfComp(props) {
+  const [numPages, setNumPages] = useState();
   const [pageNumber, setPageNumber] = useState(1);
 
   function onDocumentLoadSuccess({ numPages }) {
@@ -11,22 +12,24 @@ function PdfComp({ pdfFile }) {
 
   return (
     <div className="pdf-div">
-      {pdfFile ? (
-        <>
-          <p>
-            Page {pageNumber} of {numPages}
-          </p>
-          <Document file={pdfFile} onLoadSuccess={onDocumentLoadSuccess}>
-            {Array.from(new Array(numPages), (_, i) => (
-              <Page key={i} pageNumber={i + 1} renderTextLayer={false} renderAnnotationLayer={false} />
-            ))}
-          </Document>
-        </>
-      ) : (
-        <p>No PDF selected.</p>
-      )}
+           <p>
+        Page {pageNumber} of {numPages}
+      </p>
+      <Document file={props.pdfFile} onLoadSuccess={onDocumentLoadSuccess}>
+        {Array.apply(null, Array(numPages))
+          .map((x, i) => i + 1)
+          .map((page) => {
+            return (
+              <Page
+                pageNumber={page}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            );
+          })}
+      </Document>
+   
     </div>
   );
 }
-
 export default PdfComp;

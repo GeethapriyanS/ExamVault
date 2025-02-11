@@ -3,15 +3,18 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const multer = require("multer");
-const PdfSchema = require("./models/pdfDetails");
 const path = require("path");
 const fs = require("fs");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("./models/userModel");
+const PdfSchema = require("./models/pdfDetails");
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json()); 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/files", express.static("files"));
 
@@ -20,11 +23,13 @@ mongoose
   .then(() => console.log("MongoDB Connection Successful"))
   .catch((e) => console.log("MongoDB Connection Not Successful", e));
 
+// Create "files" directory if not exists
 const uploadDir = path.join(__dirname, "files");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+// Multer Storage Config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./files");
@@ -37,22 +42,78 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+/* ========== User Authentication ========== */
+
+// Create Account (Signup)
+app.post("/create-account", async (req, res) => {
+  const { fullName, email, password } = req.body;
+
+  if (!fullName || !email || !password) {
+    return res.status(400).json({ error: true, message: "All fields are required" });
+  }
+
+  const isUser = await User.findOne({ email });
+
+  if (isUser) {
+    return res.status(400).json({ error: true, message: "User already exists" });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = new User({
+    fullName,
+    email,
+    password: hashedPassword,
+  });
+
+  await user.save();
+
+  const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "72h" });
+
+  return res.status(201).json({ error: false, user: { fullName: user.fullName, email: user.email }, accessToken, message: "Registration Successful" });
+});
+
+// Login
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(400).json({ error: true, message: "User not found" });
+  }
+
+  const validPassword = await bcrypt.compare(password, user.password);
+
+  if (!validPassword) {
+    return res.status(400).json({ error: true, message: "Invalid password" });
+  }
+
+  const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "72h" });
+
+  return res.status(200).json({ error: false, user: { fullName: user.fullName, email: user.email }, accessToken, message: "Login Successful" });
+});
+
+/* ========== PDF Upload & Management ========== */
+
+// Upload PDF
 app.post("/upload-files", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ status: "error", message: "File not uploaded" });
   }
 
-  const { title } = req.body;
+  const { title, year, examType } = req.body;
   const fileName = req.file.filename;
 
   try {
-    await PdfSchema.create({ title, pdf: fileName });
+    await PdfSchema.create({ title, year, examType, pdf: fileName });
     res.json({ status: "ok", message: "File uploaded successfully" });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
 });
 
+// Get all PDFs
 app.get("/get-files", async (req, res) => {
   try {
     const files = await PdfSchema.find({});
@@ -62,39 +123,29 @@ app.get("/get-files", async (req, res) => {
   }
 });
 
+// Remove PDF
+app.post("/remove-file", async (req, res) => {
+  const { title, year, examType } = req.body;
+
+  try {
+    const pdf = await PdfSchema.findOneAndDelete({ title, year, examType });
+
+    if (!pdf) {
+      return res.status(404).json({ status: "error", message: "PDF not found" });
+    }
+
+    const filePath = path.join(__dirname, "files", pdf.pdf);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.json({ status: "ok", message: "PDF removed successfully" });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
+// Start Server
 app.listen(5000, () => {
   console.log("Server Started on port 5000");
 });
-
-
-
-// create a account 
-app.post("/create-account", async (req, res) =>{
-    const { fullName, email, password } = req.body;
-
-    if (!fullName || !email || !password) {
-             return res.status(400).json({ error: true, message: "All fields are required" });
-        }
-
-    const isUser = await User.findOne({ email });
-
-    if (isUser) {
-              return res.status(400).json({ error: true, message: "User already exists" });
-       }
-
-      const hashedPassword= await bcrypt.hash(password,10);
-
-
-      const user=new User({
-        fullName,email,password:hashedPassword,
-      });
-
-
-      await user.save();
-
-      const accessToken=jwt.sign({userId:user._id},process.env.ACCESS_TOKEN_SECRET,{expiresIn:"72H"});
-
-      return res.status(201).json({error: false,user: { fullName: user.fullName, email: user.email },accessToken, message: "Registration Successful"});
-
-
-    });
