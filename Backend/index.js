@@ -12,6 +12,12 @@ const PdfSchema = require("./models/pdfDetails");
 
 dotenv.config();
 
+// Check if environment variables are loaded
+if (!process.env.ACCESS_TOKEN_SECRET || !process.env.MONGODB_URL) {
+  console.error("Missing environment variables. Check your .env file.");
+  process.exit(1);
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -21,7 +27,10 @@ app.use("/files", express.static("files"));
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => console.log("MongoDB Connection Successful"))
-  .catch((e) => console.log("MongoDB Connection Not Successful", e));
+  .catch((e) => {
+    console.error("MongoDB Connection Failed:", e);
+    process.exit(1);
+  });
 
 // Create "files" directory if not exists
 const uploadDir = path.join(__dirname, "files");
@@ -31,10 +40,10 @@ if (!fs.existsSync(uploadDir)) {
 
 // Multer Storage Config
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     cb(null, "./files");
   },
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
     const uniqueSuffix = Date.now();
     cb(null, uniqueSuffix + "-" + file.originalname);
   },
@@ -73,25 +82,36 @@ app.post("/create-account", async (req, res) => {
   return res.status(201).json({ error: false, user: { fullName: user.fullName, email: user.email }, accessToken, message: "Registration Successful" });
 });
 
+
 // Login
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return res.status(400).json({ error: true, message: "User not found" });
+    if (!user) {
+      return res.status(400).json({ error: true, message: "User not found" });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+
+    if (!validPassword) {
+      return res.status(400).json({ error: true, message: "Invalid password" });
+    }
+
+    const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "72h" });
+
+    return res.status(200).json({
+      error: false,
+      user: { fullName: user.fullName, email: user.email },
+      accessToken,
+      message: "Login Successful",
+    });
+  } catch (error) {
+    console.error("Error in /login:", error);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
   }
-
-  const validPassword = await bcrypt.compare(password, user.password);
-
-  if (!validPassword) {
-    return res.status(400).json({ error: true, message: "Invalid password" });
-  }
-
-  const accessToken = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "72h" });
-
-  return res.status(200).json({ error: false, user: { fullName: user.fullName, email: user.email }, accessToken, message: "Login Successful" });
 });
 
 /* ========== PDF Upload & Management ========== */
@@ -109,6 +129,7 @@ app.post("/upload-files", upload.single("file"), async (req, res) => {
     await PdfSchema.create({ title, year, examType, pdf: fileName });
     res.json({ status: "ok", message: "File uploaded successfully" });
   } catch (error) {
+    console.error("Error in /upload-files:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
@@ -119,6 +140,7 @@ app.get("/get-files", async (req, res) => {
     const files = await PdfSchema.find({});
     res.json({ status: "ok", data: files });
   } catch (error) {
+    console.error("Error in /get-files:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
@@ -141,11 +163,13 @@ app.post("/remove-file", async (req, res) => {
 
     res.json({ status: "ok", message: "PDF removed successfully" });
   } catch (error) {
+    console.error("Error in /remove-file:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 });
 
 // Start Server
-app.listen(5000, () => {
-  console.log("Server Started on port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
 });

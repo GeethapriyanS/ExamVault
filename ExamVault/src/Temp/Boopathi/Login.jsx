@@ -5,6 +5,13 @@ const Login = () => {
 const [login,setLogin]=useState(true);
 const [signup,setSignup]=useState(false);
 
+const [signupData, setSignupData] = useState({
+  username: "",
+  email: "",
+  password: "",
+});
+
+
 const handleLogin = () => {
   setLogin(true);
   setSignup(false);
@@ -34,6 +41,36 @@ const handleSignup = () => {
   var signUp2 = document.getElementById("signup_switch");
   signUp2.style.background = "linear-gradient(#52057B, #BC6FF1)";
   signUp2.style.color = "white";
+};
+// handle signup logic
+const handleSignupSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const response = await fetch("http://localhost:5000/create-account", {  // ✅ Corrected API endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: signupData.username,  // ✅ Fixed key name
+        email: signupData.email,
+        password: signupData.password,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert("Signup Successful!");
+      setSignupData({ username: "", email: "", password: "" });
+      setLogin(true);
+      setSignup(false);
+    } else {
+      alert(result.message || "Signup Failed");
+    }
+  } catch (error) {
+    console.error("Error signing up:", error);
+    alert("Something went wrong. Try again later.");
+  }
 };
 
 
@@ -93,41 +130,47 @@ const handleSignup = () => {
 
           )}
           
-{/* sign up page */}
-
-
-  {signup && (
-         <form action="" className="signup_form" id="signup_form" >
-         <h1>Sign Up</h1>
-           <div className="user_signup_input">
-             <label htmlFor="username">Username</label>
-             <input type="text" className="username inputs_signup" required />
-           </div>
-           <div className="user_signup_input">
-             <label htmlFor="email">Email ID</label>
-             <input
-               type="email"
-               className="email inputs_signup"
-               required
-             />
-           </div>
-           <div className="user_signup_input">
-             <label htmlFor="password">Password</label>
-             <input
-               type="password"
-               className="password inputs_signup"
-               required
-             />
-           </div>
-           <div className="check_password_signup">
-               <input type="checkbox" className="check_input" />
-               <p>Show Password</p>
-           </div>
-             <button type="submit">Sign Up</button>
-         </form>
-  )}
-          
-
+{/* Signup Form */}
+{signup && (
+            <form className="signup_form" id="signup_form" onSubmit={handleSignupSubmit}>
+              <h1>Sign Up</h1>
+              <div className="user_signup_input">
+                <label htmlFor="username">Username</label>
+                <input
+                  type="text"
+                  className="username inputs_signup"
+                  required
+                  value={signupData.username}
+                  onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
+                />
+              </div>
+              <div className="user_signup_input">
+                <label htmlFor="email">Email ID</label>
+                <input
+                  type="email"
+                  className="email inputs_signup"
+                  required
+                  value={signupData.email}
+                  onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                />
+              </div>
+              <div className="user_signup_input">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  className="password inputs_signup"
+                  required
+                  value={signupData.password}
+                  onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                />
+              </div>
+              <div className="check_password_signup">
+                <input type="checkbox" className="check_input" />
+                <p>Show Password</p>
+              </div>
+              <button type="submit">Sign Up</button>
+            </form>
+          )}
 
           <div className="very_small_circle"></div>
         </div>
@@ -135,4 +178,5 @@ const handleSignup = () => {
     </div>
   );
 };
+
 export default Login;
