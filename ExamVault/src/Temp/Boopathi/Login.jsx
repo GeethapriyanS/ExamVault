@@ -11,6 +11,7 @@ const [signupData, setSignupData] = useState({
   password: "",
 });
 
+const [loginData, setLoginData] = useState({ email: "", password: "" });
 
 const handleLogin = () => {
   setLogin(true);
@@ -72,8 +73,28 @@ const handleSignupSubmit = async (e) => {
     alert("Something went wrong. Try again later.");
   }
 };
-
-
+// handle login logic
+const handleLoginSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch("http://localhost:5000/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: loginData.email, password: loginData.password }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      alert("Login Successful!");
+      localStorage.setItem("token", result.accessToken);
+      setLoginData({ email: "", password: "" });
+    } else {
+      alert(result.message || "Login Failed");
+    }
+  } catch (error) {
+    console.error("Error logging in:", error);
+    alert("Something went wrong. Try again later.");
+  }
+};
   return (
     <div className="Login_body">
       <div className="Login_container">
@@ -96,39 +117,45 @@ const handleSignupSubmit = async (e) => {
             <button className="login_switch" onClick={handleLogin} id="login_switch">Login</button>
             <button className="signup_switch" onClick={handleSignup} id="signup_switch">SignUp</button>
           </div>
+          
 
           {/* login area */}
 
 
-          { login && (
-            <form action="" className="Login_form" id="login_form" >
-            <h1>Login</h1>
-            <div className="user_login_input">
-              <label htmlFor="username">Username</label>
-              <input type="text" className="username inputs_login" required />
-            </div>
-            <div className="user_login_input">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                className="password inputs_login"
-                required
-              />
-            </div>
-            <div className="need_login">
-              <div className="check_password">
-                <input type="checkbox" className="check_input" />
-                <p>Show Password</p>
+          {login && (
+            <form className="Login_form" id="login_form" onSubmit={handleLoginSubmit}>
+              <h1>Login</h1>
+              <div className="user_login_input">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  className="email inputs_login"
+                  required
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                />
               </div>
-              <p>Forget Password</p>
-            </div>
-            <button type="submit">Login</button>
-          </form>
-
-
-
-
+              <div className="user_login_input">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  className="password inputs_login"
+                  required
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                />
+              </div>
+              <div className="need_login">
+                <div className="check_password">
+                  <input type="checkbox" className="check_input" />
+                  <p>Show Password</p>
+                </div>
+                <p>Forget Password</p>
+              </div>
+              <button type="submit">Login</button>
+            </form>
           )}
+
           
 {/* Signup Form */}
 {signup && (
