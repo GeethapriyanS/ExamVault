@@ -5,6 +5,14 @@ const Login = () => {
 const [login,setLogin]=useState(true);
 const [signup,setSignup]=useState(false);
 
+const [signupData, setSignupData] = useState({
+  username: "",
+  email: "",
+  password: "",
+});
+
+const [loginData, setLoginData] = useState({ email: "", password: "" });
+
 const handleLogin = () => {
   setLogin(true);
   setSignup(false);
@@ -35,8 +43,58 @@ const handleSignup = () => {
   signUp2.style.background = "linear-gradient(#52057B, #BC6FF1)";
   signUp2.style.color = "white";
 };
+// handle signup logic
+const handleSignupSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const response = await fetch("http://localhost:5000/create-account", {  // ✅ Corrected API endpoint
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: signupData.username,  // ✅ Fixed key name
+        email: signupData.email,
+        password: signupData.password,
+      }),
+    });
 
+    const result = await response.json();
 
+    if (response.ok) {
+      alert("Signup Successful!");
+      setSignupData({ username: "", email: "", password: "" });
+      setLogin(true);
+      setSignup(false);
+    } else {
+      alert(result.message || "Signup Failed");
+    }
+  } catch (error) {
+    console.error("Error signing up:", error);
+    alert("Something went wrong. Try again later.");
+  }
+};
+// handle login logic
+const handleLoginSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch("http://localhost:5000/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: loginData.email, password: loginData.password }),
+    });
+    const result = await response.json();
+    if (response.ok) {
+      alert("Login Successful!");
+      localStorage.setItem("token", result.accessToken);
+      setLoginData({ email: "", password: "" });
+    } else {
+      alert(result.message || "Login Failed");
+    }
+  } catch (error) {
+    console.error("Error logging in:", error);
+    alert("Something went wrong. Try again later.");
+  }
+};
   return (
     <div className="Login_body">
       <div className="Login_container">
@@ -59,75 +117,87 @@ const handleSignup = () => {
             <button className="login_switch" onClick={handleLogin} id="login_switch">Login</button>
             <button className="signup_switch" onClick={handleSignup} id="signup_switch">SignUp</button>
           </div>
+          
 
           {/* login area */}
 
 
-          { login && (
-            <form action="" className="Login_form" id="login_form" >
-            <h1>Login</h1>
-            <div className="user_login_input">
-              <label htmlFor="username">Username</label>
-              <input type="text" className="username inputs_login" required />
-            </div>
-            <div className="user_login_input">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                className="password inputs_login"
-                required
-              />
-            </div>
-            <div className="need_login">
-              <div className="check_password">
+          {login && (
+            <form className="Login_form" id="login_form" onSubmit={handleLoginSubmit}>
+              <h1>Login</h1>
+              <div className="user_login_input">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  className="email inputs_login"
+                  required
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                />
+              </div>
+              <div className="user_login_input">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  className="password inputs_login"
+                  required
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                />
+              </div>
+              <div className="need_login">
+                <div className="check_password">
+                  <input type="checkbox" className="check_input" />
+                  <p>Show Password</p>
+                </div>
+                <p>Forget Password</p>
+              </div>
+              <button type="submit">Login</button>
+            </form>
+          )}
+
+          
+{/* Signup Form */}
+{signup && (
+            <form className="signup_form" id="signup_form" onSubmit={handleSignupSubmit}>
+              <h1>Sign Up</h1>
+              <div className="user_signup_input">
+                <label htmlFor="username">Username</label>
+                <input
+                  type="text"
+                  className="username inputs_signup"
+                  required
+                  value={signupData.username}
+                  onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
+                />
+              </div>
+              <div className="user_signup_input">
+                <label htmlFor="email">Email ID</label>
+                <input
+                  type="email"
+                  className="email inputs_signup"
+                  required
+                  value={signupData.email}
+                  onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                />
+              </div>
+              <div className="user_signup_input">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  className="password inputs_signup"
+                  required
+                  value={signupData.password}
+                  onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                />
+              </div>
+              <div className="check_password_signup">
                 <input type="checkbox" className="check_input" />
                 <p>Show Password</p>
               </div>
-              <p>Forget Password</p>
-            </div>
-            <button type="submit">Login</button>
-          </form>
-
-
-
-
+              <button type="submit">Sign Up</button>
+            </form>
           )}
-          
-{/* sign up page */}
-
-
-  {signup && (
-         <form action="" className="signup_form" id="signup_form" >
-         <h1>Sign Up</h1>
-           <div className="user_signup_input">
-             <label htmlFor="username">Username</label>
-             <input type="text" className="username inputs_signup" required />
-           </div>
-           <div className="user_signup_input">
-             <label htmlFor="email">Email ID</label>
-             <input
-               type="email"
-               className="email inputs_signup"
-               required
-             />
-           </div>
-           <div className="user_signup_input">
-             <label htmlFor="password">Password</label>
-             <input
-               type="password"
-               className="password inputs_signup"
-               required
-             />
-           </div>
-           <div className="check_password_signup">
-               <input type="checkbox" className="check_input" />
-               <p>Show Password</p>
-           </div>
-             <button type="submit">Sign Up</button>
-         </form>
-  )}
-          
-
 
           <div className="very_small_circle"></div>
         </div>
@@ -135,4 +205,5 @@ const handleSignup = () => {
     </div>
   );
 };
+
 export default Login;
